@@ -654,6 +654,61 @@ static void load_overmap_terrain_mapgens( const JsonObject &jo, const std::strin
     }
 }
 
+namespace io
+{
+template<>
+std::string enum_to_string<oter_flags>( oter_flags data )
+{
+    switch( data ) {
+        // *INDENT-OFF*
+        case oter_flags::known_down: return "KNOWN_DOWN";
+        case oter_flags::known_up: return "KNOWN_UP";
+        case oter_flags::river_tile: return "RIVER";
+        case oter_flags::has_sidewalk: return "SIDEWALK";
+        case oter_flags::no_rotate: return "NO_ROTATE";
+        case oter_flags::should_not_spawn: return "SHOULD_NOT_SPAWN";
+        case oter_flags::ignore_rotation_for_adjacency: return "IGNORE_ROTATION_FOR_ADJACENCY";
+        case oter_flags::line_drawing: return "LINEAR";
+        case oter_flags::subway_connection: return "SUBWAY";
+        case oter_flags::requires_predecessor: return "REQUIRES_PREDECESSOR";
+        case oter_flags::lake: return "LAKE";
+        case oter_flags::lake_shore: return "LAKE_SHORE";
+        case oter_flags::ravine: return "RAVINE";
+        case oter_flags::ravine_edge: return "RAVINE_EDGE";
+        case oter_flags::generic_loot: return "GENERIC_LOOT";
+        case oter_flags::risk_high: return "RISK_HIGH";
+        case oter_flags::risk_low: return "RISK_LOW";
+        case oter_flags::source_ammo: return "SOURCE_AMMO";
+        case oter_flags::source_animals: return "SOURCE_ANIMALS";
+        case oter_flags::source_books: return "SOURCE_BOOKS";
+        case oter_flags::source_chemistry: return "SOURCE_CHEMISTRY";
+        case oter_flags::source_clothing: return "SOURCE_CLOTHING";
+        case oter_flags::source_construction: return "SOURCE_CONSTRUCTION";
+        case oter_flags::source_cooking: return "SOURCE_COOKING";
+        case oter_flags::source_drink: return "SOURCE_DRINK";
+        case oter_flags::source_electronics: return "SOURCE_ELECTRONICS";
+        case oter_flags::source_fabrication: return "SOURCE_FABRICATION";
+        case oter_flags::source_farming: return "SOURCE_FARMING";
+        case oter_flags::source_food: return "SOURCE_FOOD";
+        case oter_flags::source_forage: return "SOURCE_FORAGE";
+        case oter_flags::source_fuel: return "SOURCE_FUEL";
+        case oter_flags::source_gun: return "SOURCE_GUN";
+        case oter_flags::source_luxury: return "SOURCE_LUXURY";
+        case oter_flags::source_medicine: return "SOURCE_MEDICINE";
+        case oter_flags::source_people: return "SOURCE_PEOPLE";
+        case oter_flags::source_safety: return "SOURCE_SAFETY";
+        case oter_flags::source_tailoring: return "SOURCE_TAILORING";
+        case oter_flags::source_vehicles: return "SOURCE_VEHICLES";
+        case oter_flags::source_weapon: return "SOURCE_WEAPON";
+        // *INDENT-ON*
+        case oter_flags::num_oter_flags:
+            break;
+    }
+    cata_fatal( "Invalid oter_flags" );
+}
+
+} // namespace io
+
 std::string oter_type_t::get_symbol() const
 {
     return utf32_to_utf8( symbol );
@@ -687,7 +742,7 @@ void oter_type_t::load( const JsonObject &jo, const std::string &src )
         looks_like.insert( looks_like.begin(), jo.get_string( "copy-from" ) );
     }
 
-    const auto flag_reader = make_flag_reader( oter_flags_map, "overmap terrain flag" );
+    const auto flag_reader = typed_flag_reader<oter_flags>( "overmap terrain flag" );
     optional( jo, was_loaded, "flags", flags, flag_reader );
 
     optional( jo, was_loaded, "connect_group", connect_group, string_reader{} );
@@ -907,7 +962,6 @@ bool oter_t::is_hardcoded() const
         "office_tower_b_entrance",
         "slimepit",
         "slimepit_down",
-        "temple",
         "temple_finale",
         "temple_stairs"
     };
@@ -6011,8 +6065,9 @@ void overmap::place_mongroups()
                     }
                 }
                 if( swamp_count >= 25 ) {
+                    float norm_factor = std::abs( GROUP_SWAMP->freq_total / 1000.0f );
                     spawn_mon_group( mongroup( GROUP_SWAMP, tripoint( x * 2, y * 2, 0 ), 3,
-                                               rng( swamp_count * 8, swamp_count * 25 ) ) );
+                                               std::round( norm_factor * rng( swamp_count * 8, swamp_count * 25 ) ) ) );
                 }
             }
         }
@@ -6030,8 +6085,9 @@ void overmap::place_mongroups()
                 }
             }
             if( river_count >= 25 ) {
+                float norm_factor = std::abs( GROUP_RIVER->freq_total / 1000.0f );
                 spawn_mon_group( mongroup( GROUP_RIVER, tripoint( x * 2, y * 2, 0 ), 3,
-                                           rng( river_count * 8, river_count * 25 ) ) );
+                                           std::round( norm_factor * rng( river_count * 8, river_count * 25 ) ) ) );
             }
         }
     }
@@ -6039,9 +6095,10 @@ void overmap::place_mongroups()
     // Place the "put me anywhere" groups
     int numgroups = rng( 0, 3 );
     for( int i = 0; i < numgroups; i++ ) {
+        float norm_factor = std::abs( GROUP_WORM->freq_total / 1000.0f );
         spawn_mon_group( mongroup( GROUP_WORM, tripoint( rng( 0, OMAPX * 2 - 1 ), rng( 0,
                                    OMAPY * 2 - 1 ), 0 ),
-                                   rng( 20, 40 ), rng( 30, 50 ) ) );
+                                   rng( 20, 40 ), std::round( norm_factor * rng( 30, 50 ) ) ) );
     }
 }
 
